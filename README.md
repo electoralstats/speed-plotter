@@ -1,0 +1,1 @@
+`speed-plotter` is the tool used by the ES team to produce all of our cool graphics. The `\*.conf` files in this folder are the boilerplate specification files. For examples, look at [`articles`](http://github.com/electoralstats/articles). This tool is provided under the [MIT License](http://opensource.org/licenses/MIT).
