@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/bin/python2
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import sys
