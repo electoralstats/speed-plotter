@@ -5,6 +5,8 @@ import sys
 import csv
 import numpy as np
 mpl.rcParams['font.stretch'] = 'condensed'
+mpl.rcParams['font.serif'] = ['Gentium Basic']
+mpl.rcParams['font.family'] = 'serif'
 
 def barPlot(spec):
     if type(spec['data']) is dict:
