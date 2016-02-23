@@ -11,16 +11,21 @@ mpl.rcParams['font.family'] = 'serif'
 def barPlot(spec):
     if type(spec['data']) is dict:
         data = spec['data']
+        if spec['keyOrder']:
+          categories = spec['keyOrder']
+          categories.reverse()
+          values = [data[c] for c in categories]
+        else:
+          categories = [key for key in data]
+          values = [data[key] for key in data]
+          categories = [x for (y,x) in sorted(zip(values, categories), key=lambda pair: pair[0])]
+          values = sorted(values)
     elif type(spec['data']) is str:
         dataFile = open(spec['data'], r)
         csvData = csv.reader(dataFile, delimiter = spec['delimiter'])
         data = {}
         for x in csvData:
             data[x[0]] = x[1]
-    categories = [key for key in data]
-    values = [data[key] for key in data]
-    categories = [x for (y,x) in sorted(zip(values, categories), key=lambda pair: pair[0])]
-    values = sorted(values)
     fig = plt.figure(figsize=(8,4))
     ax = fig.add_axes((.1, .8, .8, .9))
     pos = np.arange(len(categories)) + .5
@@ -73,7 +78,8 @@ def stackedBarPlot(spec):
                 valString = '{0:.1f}'.format(value[i])
             else:
                 valString = int(value[i])
-            ax.text(-(.5*r.get_width())+(widths[i]), r.get_y()+r.get_height()/2, valString, ha=alignment, va='center')
+            if not spec['labelendonly']:
+                ax.text(-(.5*r.get_width())+(widths[i]), r.get_y()+r.get_height()/2, valString, ha=alignment, va='center')
         rectangles.append(rects[0])
         fields2.append(field)
     if spec['labelend']:
@@ -144,7 +150,7 @@ def scatterPlot(spec):
         y = [float(z[1]) for z in data]
     fig = plt.figure(figsize=(8,4))
     ax = fig.add_axes((.1, .8, .8, .9))
-    plt.scatter(x,y, c=spec['color'], marker='.', lw=0, s=100)
+    plt.scatter(x,y, c=spec['color'], marker='.', lw=0, s=130)
     if spec['connect']:
         plt.plot(x,y, c=spec['color'])
     plt.ylabel(spec['ylabel'])
@@ -157,6 +163,7 @@ def scatterPlot(spec):
         plt.ylim(ax.get_ylim())
     if spec['regress']:
         m, b = np.polyfit(x, y, 1)
+        print m, b
         plotx = np.arange(np.floor(ax.get_xlim()[0]), 2*np.ceil(ax.get_xlim()[1]))
         ploty = np.add(np.multiply(plotx, m),b)
         plt.plot(plotx, ploty, c=spec['regresscolor'])
@@ -166,12 +173,77 @@ def scatterPlot(spec):
         plotx = np.arange(np.floor(ax.get_xlim()[0]), 2*np.ceil(ax.get_xlim()[1]))
         ploty = np.add(np.multiply(plotx, m),b)
         plt.plot(plotx, ploty, c=spec['linecolor'])
+    if spec['add_axes']:
+        plt.axhline(0, color="#000000")
+        plt.axvline(0, color="#000000")
     plt.title(spec['title'])
     plt.figtext(.1, .63, 'ElectoralStatistics.com', color='#283D4B', ha='left')
     if spec['source']:
         plt.figtext(.9, .63, 'Source: ' + spec['source'], color='#283D4B', ha='right')
     plt.savefig(spec['outfile'], bbox_inches='tight')
 
+def bubbleScatter(spec):
+    if type(spec['data']) is dict:
+        x = spec['data']['x']
+        y = spec['data']['y']
+        s = spec['data']['s']
+    elif type(spec['data']) is list and len(spec['data'])==2:
+        x = spec['data'][0]
+        y = spec['data'][1]
+        s = spec['data'][2]
+    elif type(spec['data']) is list and len(spec['data'])!=2:
+        x = [z[0] for z in spec['data']]
+        y = [z[1] for z in spec['data']]
+        s = [z[2] for z in spec['data']]
+    elif type(spec['data']) is str:
+        dataFile = open(spec['data'], "r")
+        csvData = csv.reader(dataFile, delimiter = spec['delimiter'])
+        data = [z for z in csvData]
+        x = [z[0] for z in data]
+        y = [float(z[1]) for z in data]
+        s = [float(z[2])*100 for z in data]
+    refFile = open(spec['reference'], "r")
+    csvRef = csv.reader(refFile, delimiter = spec['delimiter'])
+    ref = [z for z in csvRef]
+    print ref
+    xref = [z[0] for z in ref]
+    yref = [float(z[1]) for z in ref]
+    sref = [float(z[2])*100 for z in ref]
+    print xref, yref
+    fig = plt.figure(figsize=(8,4))
+    ax = fig.add_axes((.1, .8, .8, .9))
+    plt.scatter(x,y, c=spec['color'], marker='.', lw=0, s=s, alpha=.4)
+    plt.scatter(xref, yref, facecolors='none', marker='.', lw=.5, s=sref)
+    if spec['connect']:
+        plt.plot(x,y, c=spec['color'])
+    plt.ylabel(spec['ylabel'])
+    plt.xlabel(spec['xlabel'])
+    if spec['lims']:
+        plt.xlim(spec['lims'][0])
+        plt.ylim(spec['lims'][1])
+    else:
+        plt.xlim(ax.get_xlim())
+        plt.ylim(ax.get_ylim())
+    if spec['regress']:
+        m, b = np.polyfit(x, y, 1)
+        print m, b
+        plotx = np.arange(np.floor(ax.get_xlim()[0]), 2*np.ceil(ax.get_xlim()[1]))
+        ploty = np.add(np.multiply(plotx, m),b)
+        plt.plot(plotx, ploty, c=spec['regresscolor'])
+    if spec['line']:
+        m = spec['line'][0]
+        b = spec['line'][1]
+        plotx = np.arange(np.floor(ax.get_xlim()[0]), 2*np.ceil(ax.get_xlim()[1]))
+        ploty = np.add(np.multiply(plotx, m),b)
+        plt.plot(plotx, ploty, c=spec['linecolor'])
+    if spec['add_axes']:
+        plt.axhline(0, color="#000000")
+        plt.axvline(0, color="#000000")
+    plt.title(spec['title'])
+    plt.figtext(.1, .63, 'ElectoralStatistics.com', color='#283D4B', ha='left')
+    if spec['source']:
+        plt.figtext(.9, .63, 'Source: ' + spec['source'], color='#283D4B', ha='right')
+    plt.savefig(spec['outfile'], bbox_inches='tight')
 
 
 
@@ -196,6 +268,10 @@ spec = {"title":"",
         "decimals":True,
         "line":False,
         "outfile":False,
+        "add_axes":False,
+	"keyOrder":False,
+	"labelend":False,
+	"labelendonly":False,
 }
 execfile(specFileLocation, spec)
 spec['outfile'] = spec['outfile'] if spec['outfile'] else specFileLocation.replace(".conf", ".png")
@@ -207,3 +283,5 @@ elif spec['type'] == 'stackedbarplot':
     stackedBarPlot(spec)
 elif spec['type'] == 'scatter':
     scatterPlot(spec)
+elif spec['type'] == 'bubblescatter':
+  bubbleScatter(spec)
